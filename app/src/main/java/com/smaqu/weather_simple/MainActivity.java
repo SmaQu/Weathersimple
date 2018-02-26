@@ -1,8 +1,10 @@
 package com.smaqu.weather_simple;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,6 +20,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -59,12 +62,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             super.onPostExecute(result);
 
             try {
+
+                String message = "";
+
                 JSONObject jsonObject = new JSONObject(result);
                 String weatherInfo = jsonObject.getString("weather");
 
                 JSONArray array = new JSONArray(weatherInfo);
                 for (int i = 0; i < array.length(); i++) {
 
+                    JSONObject jsonPart = array.getJSONObject(i);
+                    String main = "";
+                    String description = "";
+
+                    main = jsonPart.getString("main");
+                    description = jsonPart.getString("description");
+
+                    if (!Objects.equals(main, "") && !Objects.equals(description, "")) {
+                        message += main + ": " + description + "\r\n";
+                    }
+                }
+
+                if(!Objects.equals(message, "")) {
+                    weather.setVisibility(View.VISIBLE);
+                    weather.setText(message);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -94,8 +115,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void findWeather() {
-        city.getText();
 
         DownloadTask task = new DownloadTask();
+        Uri.Builder builder = new Uri.Builder();
+        builder.scheme("https")
+                .authority("api.openweathermap.org")
+                .appendPath("data")
+                .appendPath("2.5")
+                .appendPath("forecast")
+                .appendQueryParameter("q", city.getText().toString())
+                .appendQueryParameter("APPID", getResources().getString(R.string.appId));
+        String url = builder.build().toString();
+        task.execute(url);
     }
 }
